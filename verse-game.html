@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Isaiah 41:10 Builder</title>
+  <style>
+    body {
+      font-family: "Arial", sans-serif;
+      background: #fffaf0;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 32px;
+      color: #2e5a78;
+    }
+    #bank, #slots {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      min-height: 100px;
+      padding: 10px;
+      margin: 20px auto;
+      max-width: 1000px;
+    }
+    .tile, .slot {
+      background: #d0ebff;
+      border-radius: 10px;
+      padding: 10px 15px;
+      margin: 8px;
+      font-size: 22px;
+      min-width: 60px;
+      text-align: center;
+      user-select: none;
+      touch-action: none;
+    }
+    .tile {
+      cursor: grab;
+      position: relative;
+      z-index: 10;
+    }
+    .slot {
+      background: #f0fff0;
+      border: 2px dashed #bbb;
+      min-height: 50px;
+      min-width: 100px;
+    }
+    .message {
+      font-size: 24px;
+      color: green;
+      margin-top: 20px;
+    }
+    button {
+      margin: 10px;
+      font-size: 20px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Isaiah 41:10 Builder</h1>
+  <div id="bank"></div>
+  <h3>Drag the pieces into the correct order:</h3>
+  <div id="slots"></div>
+  <div class="message" id="message"></div>
+  <button onclick="checkAnswer()">Check</button>
+  <button onclick="resetGame()">Reset</button>
+  <button onclick="nextLevel()">Next Level</button>
+
+  <script>
+    const levels = [
+      // Level 1: full sentences
+      [
+        "Do not fear, for I am with you.",
+        "Do not be dismayed, for I am your God.",
+        "I will strengthen you and help you.",
+        "I will uphold you with my righteous right hand.",
+        "Isaiah 41:10"
+      ],
+      // Level 2: shorter phrases
+      [
+        "Do not fear,",
+        "for I am with you.",
+        "Do not be dismayed,",
+        "for I am your God.",
+        "I will strengthen you",
+        "and help you.",
+        "I will uphold you",
+        "with my righteous",
+        "right hand.",
+        "Isaiah 41:10"
+      ],
+      // Level 3: individual words
+      [
+        "Do","not","fear,","for","I","am","with","you.",
+        "Do","not","be","dismayed,","for","I","am","your","God.",
+        "I","will","strengthen","you","and","help","you.",
+        "I","will","uphold","you","with","my","righteous","right","hand.",
+        "Isaiah","41:10"
+      ]
+    ];
+
+    let levelIndex = 0;
+    let correctOrder = [];
+
+    function shuffle(arr) {
+      let a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function resetGame() {
+      const bank = document.getElementById('bank');
+      const slots = document.getElementById('slots');
+      const message = document.getElementById('message');
+      message.textContent = '';
+
+      correctOrder = levels[levelIndex].slice();
+      const shuffled = shuffle(correctOrder);
+
+      bank.innerHTML = '';
+      slots.innerHTML = '';
+
+      shuffled.forEach(text => {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.textContent = text;
+        tile.setAttribute('draggable', 'false');
+        addDragLogic(tile);
+        bank.appendChild(tile);
+      });
+
+      for (let i = 0; i < correctOrder.length; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.dataset.index = i;
+        slots.appendChild(slot);
+      }
+    }
+
+    function nextLevel() {
+      if (levelIndex < levels.length - 1) {
+        levelIndex++;
+        resetGame();
+      }
+    }
+
+    function checkAnswer() {
+      const slots = document.querySelectorAll('.slot');
+      const arranged = Array.from(slots).map(s => s.textContent.trim());
+      const message = document.getElementById('message');
+      if (arranged.join(' ') === correctOrder.join(' ')) {
+        message.textContent = "✅ Great job on Level " + (levelIndex + 1) + "!";
+      } else {
+        message.textContent = "❌ Not quite! Try again.";
+      }
+    }
+
+    function addDragLogic(el) {
+      let offsetX, offsetY, dropTarget = null;
+
+      function moveAt(x, y) {
+        el.style.left = x - offsetX + 'px';
+        el.style.top = y - offsetY + 'px';
+      }
+
+      function handleStart(e) {
+        const point = e.touches ? e.touches[0] : e;
+        offsetX = point.clientX - el.getBoundingClientRect().left;
+        offsetY = point.clientY - el.getBoundingClientRect().top;
+        el.style.position = 'absolute';
+        el.style.zIndex = 1000;
+        document.body.appendChild(el);
+        moveAt(point.pageX, point.pageY);
+        document.addEventListener(e.touches ? 'touchmove' : 'mousemove', move);
+        document.addEventListener(e.touches ? 'touchend' : 'mouseup', handleEnd);
+        e.preventDefault();
+      }
+
+      function move(e) {
+        const point = e.touches ? e.touches[0] : e;
+        moveAt(point.pageX, point.pageY);
+        el.hidden = true;
+        const elem = document.elementFromPoint(point.clientX, point.clientY);
+        el.hidden = false;
+        dropTarget = elem?.closest('.slot') || null;
+      }
+
+      function handleEnd() {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', handleEnd);
+        document.removeEventListener('touchmove', move);
+        document.removeEventListener('touchend', handleEnd);
+        if (dropTarget && dropTarget.children.length === 0) {
+            dropTarget.appendChild(el);
+            el.style = '';
+        } else {
+            document.getElementById('bank').appendChild(el);
+            el.style = '';
+        }
+      }
+
+      el.addEventListener('mousedown', handleStart);
+      el.addEventListener('touchstart', handleStart);
+    }
+
+    resetGame();
+  </script>
+</body>
+</html>
